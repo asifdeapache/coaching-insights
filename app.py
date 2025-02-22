@@ -91,7 +91,8 @@ with st.sidebar:
             icons=[item["icon"] for item in menu_options.values()],
             menu_icon="cast",
             default_index=0,
-            on_change=lambda: select_menu_item(menu_selected)
+            on_change=select_menu_item,
+            key="menu_option"
         )
     else:
         menu_selected = option_menu(
@@ -100,7 +101,8 @@ with st.sidebar:
             icons=[item["icon"] for item in menu_options.values()],
             menu_icon="",
             default_index=0,
-            on_change=lambda: select_menu_item(menu_selected)
+            on_change=select_menu_item,
+            key="menu_option"
         )
 
     st.sidebar.button("Toggle Menu", on_click=toggle_menu)

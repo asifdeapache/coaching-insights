@@ -1,1 +1,6 @@
+streamlit
+pandas
+requests
+oauth2client
+st-gsheets-connection
 streamlit-option-menu

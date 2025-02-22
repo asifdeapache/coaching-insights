@@ -1,0 +1,96 @@
+import streamlit as st
+from streamlit_option_menu import option_menu
+
+# Define different functionalities
+def dashboard():
+    st.write("This is the dashboard page.")
+
+def punctuality():
+    st.write("This is the punctuality page.")
+
+def sectionwise_time():
+    st.write("This is the sectionwise time page.")
+
+def sectional_speed():
+    st.write("This is the sectional speed page.")
+
+# # Top header section
+# st.markdown("""
+#     <div style="margin: 0; display: flex; align-items: center; background-color: #333; color: #fff; width: 100%;">
+#         <img src="https://img.icons8.com/ios-filled/50/ffffff/train.png" width="40" height="40" style="margin-right: 10px;">
+#         <h1 style="margin: 0;">Coaching Insights of Sealdah Division</h1>
+#     </div>
+#     """, unsafe_allow_html=True)
+
+# Sidebar configuration
+# Remove whitespace from the top of the page and sidebar
+st.markdown("""
+        <style>
+            #    .stAppHeader {
+            #         display: none;
+            #     }
+                .stMarkdownContainer {
+                    display: none;
+                }
+                .stMainBlockContainer {
+                    margin: 0;
+                    padding-top: 25px;
+                    border: 0;
+                }
+        </style>
+        """, unsafe_allow_html=True)
+st.markdown("""
+    <div style="display: flex; align-items: center; justify-content: center;">
+        <img src="https://img.icons8.com/ios-filled/50/007bff/train.png" width="50" height="50" style="margin-right: 10px;">
+        <h1 id="header-title" style="margin: 0;">Coaching Insights (SDAH)</h1>
+    </div>
+    <script>
+        const headerTitle = document.getElementById('header-title');
+        const observer = new MutationObserver(() => {
+            const body = document.body;
+            const isDarkMode = window.getComputedStyle(body).backgroundColor === 'rgb(0, 0, 0)';
+            headerTitle.style.color = isDarkMode ? '#fff' : '#333';
+        });
+        observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    </script>
+    """, unsafe_allow_html=True)
+st.sidebar.title("Menu")
+menu_options = {
+    "Dashboard": {"icon": "house", "function": dashboard},
+    "Punctuality": {"icon": "clock", "function": punctuality},
+    "Sectionwise Time": {"icon": "clock-history", "function": sectionwise_time},
+    "Sectional Speed": {"icon": "speedometer", "function": sectional_speed},
+}
+
+if "menu_expanded" not in st.session_state:
+    st.session_state["menu_expanded"] = True
+
+def toggle_menu():
+    st.session_state["menu_expanded"] = not st.session_state["menu_expanded"]
+
+with st.sidebar:
+    if st.session_state["menu_expanded"]:
+        menu_selected = option_menu(
+            "Menu",
+            options=list(menu_options.keys()),
+            icons=[item["icon"] for item in menu_options.values()],
+            menu_icon="cast",
+            default_index=0,
+        )
+    else:
+        menu_selected = option_menu(
+            "",
+            options=list(menu_options.keys()),
+            icons=[item["icon"] for item in menu_options.values()],
+            menu_icon="",
+            default_index=0,
+        )
+
+    st.sidebar.button("Toggle Menu", on_click=toggle_menu)
+
+# Call the selected function
+menu_options[menu_selected]["function"]()
+
+# Main content
+# st.title("Coaching Insights of Sealdah Division, Eastern Railway")
+st.write("This is an example Streamlit app with a collapsible sidebar.")

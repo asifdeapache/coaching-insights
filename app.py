@@ -1,9 +1,26 @@
 import streamlit as st
 from streamlit_option_menu import option_menu
+import gspread
+from google.oauth2 import service_account
+# from oauth2client.service_account import ServiceAccountCredentials
+import pandas as pd
+
+# Set up Google Sheets API credentials
+# Load the secrets from secrets.toml
+scope = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive"
+]
+credentials_dict = st.secrets["google_api"]
+credentials = service_account.Credentials.from_service_account_info(credentials_dict, scopes=scope)
+
+# Authorize the client
+client = gspread.authorize(credentials)
 
 # Define different functionalities
 def dashboard():
     st.write("This is the dashboard page.")
+
 
 def punctuality():
     st.write("This is the punctuality page.")
@@ -105,10 +122,21 @@ with st.sidebar:
             key="menu_option"
         )
 
-    st.sidebar.button("Toggle Menu", on_click=toggle_menu)
-
 # Call the selected function
 menu_options[menu_selected]["function"]()
 
 # Main content
 st.write("This is an example Streamlit app with a collapsible sidebar.")
+
+# Open the Google Sheet
+spreadsheet_id = "1wQfTF5WMC03hNXYKYZYoFrRFcWs_G8bOhu7g5yYDG6c"
+sheet = client.open_by_key(spreadsheet_id).sheet1
+
+# Read data from the Google Sheet
+expected_headers = ["TRAINNO", "FROMSTN", "FROMTIME"]  # Replace with your actual headers
+data = sheet.get_all_records(expected_headers=expected_headers)
+df = pd.DataFrame(data)
+
+# Display data in Streamlit
+st.title("Google Sheets Data in Streamlit")
+st.write(df)

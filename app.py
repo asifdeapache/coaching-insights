@@ -14,31 +14,41 @@ def sectionwise_time():
 def sectional_speed():
     st.write("This is the sectional speed page.")
 
-# # Top header section
-# st.markdown("""
-#     <div style="margin: 0; display: flex; align-items: center; background-color: #333; color: #fff; width: 100%;">
-#         <img src="https://img.icons8.com/ios-filled/50/ffffff/train.png" width="40" height="40" style="margin-right: 10px;">
-#         <h1 style="margin: 0;">Coaching Insights of Sealdah Division</h1>
-#     </div>
-#     """, unsafe_allow_html=True)
-
 # Sidebar configuration
 # Remove whitespace from the top of the page and sidebar
 st.markdown("""
         <style>
-            #    .stAppHeader {
-            #         display: none;
-            #     }
-                .stMarkdownContainer {
-                    display: none;
+            .stMarkdownContainer {
+                display: none;
+            }
+            .stMainBlockContainer {
+                margin: 0;
+                padding-top: 25px;
+                border: 0;
+            }
+            @media (max-width: 768px) {
+                .stSidebar {
+                    width: 100% !important;
+                    position: relative !important;
                 }
-                .stMainBlockContainer {
-                    margin: 0;
-                    padding-top: 25px;
-                    border: 0;
+                .stSidebar .css-1d391kg {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
                 }
+                .stSidebar .css-1d391kg .css-1v3fvcr {
+                    width: 100%;
+                }
+                .stSidebar .css-1d391kg .css-1v3fvcr .css-1v3fvcr {
+                    width: 100%;
+                }
+                .stSidebar .css-1d391kg .css-1v3fvcr .css-1v3fvcr .css-1v3fvcr {
+                    width: 100%;
+                }
+            }
         </style>
         """, unsafe_allow_html=True)
+
 st.markdown("""
     <div style="display: flex; align-items: center; justify-content: center;">
         <img src="https://img.icons8.com/ios-filled/50/007bff/train.png" width="50" height="50" style="margin-right: 10px;">
@@ -54,6 +64,7 @@ st.markdown("""
         observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
     </script>
     """, unsafe_allow_html=True)
+
 st.sidebar.title("Menu")
 menu_options = {
     "Dashboard": {"icon": "house", "function": dashboard},
@@ -92,5 +103,4 @@ with st.sidebar:
 menu_options[menu_selected]["function"]()
 
 # Main content
-# st.title("Coaching Insights of Sealdah Division, Eastern Railway")
 st.write("This is an example Streamlit app with a collapsible sidebar.")

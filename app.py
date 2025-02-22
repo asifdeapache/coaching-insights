@@ -79,6 +79,10 @@ if "menu_expanded" not in st.session_state:
 def toggle_menu():
     st.session_state["menu_expanded"] = not st.session_state["menu_expanded"]
 
+def select_menu_item(menu_item):
+    st.session_state["menu_expanded"] = False
+    return menu_item
+
 with st.sidebar:
     if st.session_state["menu_expanded"]:
         menu_selected = option_menu(
@@ -87,6 +91,7 @@ with st.sidebar:
             icons=[item["icon"] for item in menu_options.values()],
             menu_icon="cast",
             default_index=0,
+            on_change=lambda: select_menu_item(menu_selected)
         )
     else:
         menu_selected = option_menu(
@@ -95,6 +100,7 @@ with st.sidebar:
             icons=[item["icon"] for item in menu_options.values()],
             menu_icon="",
             default_index=0,
+            on_change=lambda: select_menu_item(menu_selected)
         )
 
     st.sidebar.button("Toggle Menu", on_click=toggle_menu)

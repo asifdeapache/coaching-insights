@@ -1,0 +1,8 @@
+# Ignore stremlit
+.stremlit/
+
+# Ignore virtual environment
+venv/
+
+# Ignore data
+data/

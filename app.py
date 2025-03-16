@@ -1,63 +1,5 @@
 import streamlit as st
 from streamlit_option_menu import option_menu
-import gspread
-from google.oauth2 import service_account
-# from oauth2client.service_account import ServiceAccountCredentials
-import pandas as pd
-import pymongo
-from pymongo import MongoClient
-import os
-# Plotly chart to show data points with values
-import plotly.express as px
-
-# Set up Google Sheets API credentials
-# Load the secrets from secrets.toml
-scope = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive"
-]
-credentials_dict = st.secrets["google_api"]
-credentials = service_account.Credentials.from_service_account_info(credentials_dict, scopes=scope)
-
-# mongodb connection
-# MongoDB connection setup
-mongo_uri = os.getenv("mongo")
-client = MongoClient(mongo_uri)
-db = client['CoachingInsights']
-collection = db['CTR_DB']
-
-# Initialize connection.
-@st.cache_resource
-def init_connection():
-    return pymongo.MongoClient(st.secrets["mongo"]["uri"])
-
-# Pull data from the collection.
-@st.cache_data(ttl=600)
-def get_all_data():
-    client = init_connection()
-    db = client["CoachingInsights"]
-    collection = db["CTR_DB"]
-    items = collection.find()
-    items = list(items)  # make hashable for st.cache_data
-    return items
-
-@st.cache_data(ttl=600)
-def get_data(train_no, sch_date):
-    client = init_connection()
-    db = client["CoachingInsights"]
-    collection = db["CTR_DB"]
-    if sch_date is None:
-        query = {"Train No": str(train_no)}
-    elif train_no is None:
-        query = {"Sch date": sch_date}
-    else:
-        query = {"Train No": str(train_no), "Sch date": sch_date}
-    items = collection.find(query)
-    items = list(items)  # make hashable for st.cache_data
-    return items
-
-# Authorize the client
-client = gspread.authorize(credentials)
 
 # Define different functionalities
 def dashboard():
@@ -121,6 +63,7 @@ def dashboard():
             st.plotly_chart(fig)
     else:
         st.write("No data found for the given Train No and Sch Date.")
+
 
 def punctuality():
     st.write("This is the punctuality page.")
@@ -237,18 +180,5 @@ with st.sidebar:
 # Call the selected function
 menu_options[menu_selected]["function"]()
 
-# # Main content
-# st.write("This is an example Streamlit app with a collapsible sidebar.")
-
-# # Open the Google Sheet
-# spreadsheet_id = "1wQfTF5WMC03hNXYKYZYoFrRFcWs_G8bOhu7g5yYDG6c"
-# sheet = client.open_by_key(spreadsheet_id).sheet1
-
-# # Read data from the Google Sheet
-# expected_headers = ["TRAINNO", "FROMSTN", "FROMTIME"]  # Replace with your actual headers
-# data = sheet.get_all_records(expected_headers=expected_headers)
-# df = pd.DataFrame(data)
-
-# # Display data in Streamlit
-# st.title("Google Sheets Data in Streamlit")
-# st.write(df)
+# Main content
+st.write("This is an example Streamlit app with a collapsible sidebar.")

@@ -1,5 +1,5 @@
 # Ignore stremlit
-.stremlit/
+.streamlit/
 
 # Ignore virtual environment
 venv/

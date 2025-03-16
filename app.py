@@ -1,7 +1,7 @@
 import streamlit as st
 from streamlit_option_menu import option_menu
 import gspread
-from google.oauth2 import service_account
+# from google.oauth2 import service_account
 # from oauth2client.service_account import ServiceAccountCredentials
 import pandas as pd
 import pymongo
@@ -12,12 +12,12 @@ import plotly.express as px
 
 # Set up Google Sheets API credentials
 # Load the secrets from secrets.toml
-scope = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive"
-]
-credentials_dict = st.secrets["google_api"]
-credentials = service_account.Credentials.from_service_account_info(credentials_dict, scopes=scope)
+# scope = [
+#     "https://www.googleapis.com/auth/spreadsheets",
+#     "https://www.googleapis.com/auth/drive"
+# ]
+# credentials_dict = st.secrets["google_api"]
+# credentials = service_account.Credentials.from_service_account_info(credentials_dict, scopes=scope)
 
 # mongodb connection
 # MongoDB connection setup
@@ -57,7 +57,7 @@ def get_data(train_no, sch_date):
     return items
 
 # Authorize the client
-client = gspread.authorize(credentials)
+# client = gspread.authorize(credentials)
 
 # Define different functionalities
 def dashboard():

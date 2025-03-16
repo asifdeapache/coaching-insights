@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "coaching-insights-451711",
+  "private_key_id": "a81913300a10eb3f96bccb22716283b85ab98ca7",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDR4IdQW71LoQxY\npW5pNE4xqvV2DCrBy6MUYequK90CkwAZTLnkaNq/sTwcwed8C1J4ph4nLUwNsJHz\nSsdiJzBF1dEPQtwrUuGAyrYuGq4OE6U4QGucYeLkw96auTFVl4fJNo5cxGYhHk9N\naumZ2/hv1xXwVGELqiDKshoYLJe0U+SuS/0frzP6avpJROKICOwfgETqrKI5HeGy\nI5lXo+hLXeFlz2n8RBm2oc4RnvKpvnirhpYBPWSjOn0xSiGbXgB3LtOSMbvzjDJW\n/A7WsjI8/GPhDqJQUqRfJ3ddEElCAwFsPY23QJ2SOufg7EE8tUiadeNSQWE43wrH\n/4OLlAJ7AgMBAAECggEAAc7zIlHpf27AsanBUE9L4uJ2Eq+A8N9UiC+7UWwW6Mnj\n5WNtKStAbVXfGjZFgtz9gXGoYWaVVf9JJ/3nK8kBoOZ6WkghHEH4adGXRYsYCSXd\nKBIMF3J4WpktGKxhtln4HRl1hAZyp827Y3CBFxZFA1mwdaTKyWWUdKHu1tbo27ok\n2AUb5NjI6ZlQUX8vxoQTcO2YKSpiUYl90791VZ8fe48joTTerlQYaScgNn/e5spQ\nlr6W3cdlXbuLe3v5P4ivgyIHXe25WtGOVB97wAsI891IBbgGJypravQAEamD3vS0\nlc7FFF4uFnCr/gygAvP71cVoJlMXiiKnz3nbb4F1KQKBgQD0NuIlfabUljiK8us+\nBTrmtISulhyn0aeMV75CvGtmxE578Tu/YIFdjLRYHRZLoGjIXH8oTV+igu1EYSkR\nfP9hia8KWr4a+55LDM6z20tInVckh0q5eUsSErZbMN52fjKjmDpWe0agqZArD5ZK\ndZ1u9dXr0JOAsiSaQxx4BYnLPwKBgQDcAW3PcBrVzOKBg/21+46PKbMKODVS+opj\n2P7mpmNY9BaXdGC5N74WFmIM/cTOYix/EuMzSc2UD4p5/5eFFXvjb9tvuMb/VVET\nvTDqflYSf1Ml5RIl9HT5YaDE+2idSm2mci1maljKY6wmF3YHA7Sfmlz2mRah/+bL\nmDqe+7WlxQKBgCBCU7MiGvR/924bUom5xSMOe2xYdeaRIjG+sWo9W26Sxc9HeV35\nUH1cBcKR7Q0GXnEBDuby+YwNAWyD7RnbShzHRDD49Z242RsO0QsfD53C8uznVi6T\n4B++CwqWtPwwBV5o0GP2GslEPMADahXh3W732E8zGRjp7z3VWaBdEuufAoGBAMHC\nxGqYihnYW3jDvZQkHBb8G8IZZOVS4MU1XLHYwtCaELeM+I7HiDM9vVdBvK4jiprU\nEKOgEV2gHk56C4FbPYQ+hJ2tuB0yj7h5vHYZlEawOpO6XrRsywTDtesmnKlC3rVk\nA5YafV6qT/gwW3OsEM0sD0nj5CoDDcorpR1WBFIdAoGBAMWp9MaMne+OsMkvHczF\n856kmos/x6BktHEFi0gme7YBim8psXP8ce8M1HtMSJpMZqkpEMJNWL4440K7T9va\nXsGnBlKAys1ABKNjwmrotiDfWy7eDDQ84J07zeQfb6EoF/ffJwX389dLOhhBIf24\nqTnL8s0B1RV96a5OD1nIFS/3\n-----END PRIVATE KEY-----\n",
+  "client_email": "coaching-insights@coaching-insights-451711.iam.gserviceaccount.com",
+  "client_id": "108594127606412287933",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/coaching-insights%40coaching-insights-451711.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

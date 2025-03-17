@@ -10,17 +10,6 @@ import os
 # Plotly chart to show data points with values
 import plotly.express as px
 
-# Set up Google Sheets API credentials
-# Load the secrets from secrets.toml
-# scope = [
-#     "https://www.googleapis.com/auth/spreadsheets",
-#     "https://www.googleapis.com/auth/drive"
-# ]
-# credentials_dict = st.secrets["google_api"]
-# credentials = service_account.Credentials.from_service_account_info(credentials_dict, scopes=scope)
-
-# mongodb connection
-# MongoDB connection setup
 mongo_uri = os.getenv("mongo")
 client = MongoClient(mongo_uri)
 db = client['CoachingInsights']
@@ -56,14 +45,22 @@ def get_data(train_no, sch_date):
     items = list(items)  # make hashable for st.cache_data
     return items
 
+@st.cache_data(ttl=600)
+def check_stn_for_train(train_no, sch_date, stn):
+    client = init_connection()
+    db = client["CoachingInsights"]
+    collection = db["CTR_DB"]
+    query = {"Train No": str(train_no), "Sch date": sch_date, "Stn": stn}
+    items = list(collection.find(query))
+    return(bool(items))
 # Authorize the client
 # client = gspread.authorize(credentials)
 
 # Define different functionalities
-def dashboard():
+def max_speed_trains():
     st.markdown("""
         <div style="display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 0px; border-radius: 1px;">
-            <h2 id="dashboard-title" style="margin: 0; font-size: 1.5em;">🚄 Maximum Speed Analysis of EMU Locals</h2>
+            <h2 id="dashboard-title" style="margin: 0; font-size: 1.5em;">🚄 Maximum Speed Analysis of EMU Locals (Trains)</h2>
         </div>
         <script>
             const dashboardTitle = document.getElementById('dashboard-title');
@@ -115,15 +112,63 @@ def dashboard():
         if not df.empty:
             fig = px.line(df, x="Stn", y="Max Speed", title="Max Speed by Station", markers=True)
             fig.update_traces(text=df["Max Speed"], textposition="top center", mode='lines+markers+text')
-            fig.update_layout(xaxis_title="Station", yaxis_title="Max Speed (Kmph)",
-                              xaxis=dict(categoryorder='array', categoryarray=df["Stn"]))
+            fig.update_layout(
+                xaxis_title="Station", 
+                yaxis_title="Max Speed (Kmph)",
+                xaxis=dict(categoryorder='array', categoryarray=df["Stn"]),
+                dragmode=False  # Disable zoom
+            )
 
             st.plotly_chart(fig)
     else:
         st.write("No data found for the given Train No and Sch Date.")
 
-def punctuality():
-    st.write("This is the punctuality page.")
+def max_speed_sections():
+    st.markdown("""
+    <div style="display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 0px; border-radius: 1px;">
+        <h2 id="dashboard-title" style="margin: 0; font-size: 1.5em;">🚄 Maximum Speed Analysis of EMU Locals (Sections)</h2>
+    </div>
+    <script>
+        const dashboardTitle = document.getElementById('dashboard-title');
+        const observer = new MutationObserver(() => {
+            const body = document.body;
+            const isDarkMode = window.getComputedStyle(body).backgroundColor === 'rgb(0, 0, 0)';
+            dashboardTitle.style.color = isDarkMode ? '#fff' : '#333';
+        });
+        observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    </script>
+    """, unsafe_allow_html=True)
+    
+    # Input field for Sch Date
+    # Fetch distinct Sch Date values from the database
+    sch_date_list = [item["Sch date"] for item in get_all_data()]
+    distinct_sch_date = sorted(set(sch_date_list))
+
+    # Date input for Sch Date with default value set to the first date in distinct_sch_date
+    sch_date = st.date_input("Enter Sch Date:", value=max(distinct_sch_date), min_value=min(distinct_sch_date), max_value=max(distinct_sch_date))
+
+    # Fetch distinct Train No values for the selected Sch Date from the database
+    train_no_list = []
+    for item in get_data(None, sch_date.strftime("%Y-%m-%d")):
+        # st.write(item)
+        if check_stn_for_train(item["Train No"], sch_date.strftime("%Y-%m-%d"), "RHA") and check_stn_for_train(item["Train No"], sch_date.strftime("%Y-%m-%d"), "GEDE"):
+            train_no_list.append(item["Train No"])
+    distinct_train_no = sorted(set(train_no_list))
+    st.write(f"Distinct Train No: {distinct_train_no}")
+    # Iterate through the list of train numbers and list the required details
+    for train_no in distinct_train_no:
+        data = get_data(train_no=train_no, sch_date=sch_date.strftime("%Y-%m-%d"))
+        if data:
+            df = pd.DataFrame(data)
+            df["SL/No"] = pd.to_numeric(df["SL/No"], errors='coerce')
+            rha_sl_no = df.loc[df["Stn"] == "RHA", "SL/No"]
+            gede_sl_no = df.loc[df["Stn"] == "GEDE", "SL/No"]
+            filtered_df = df[(df["SL/No"] >= rha_sl_no) & (df["SL/No"] <= gede_sl_no)]
+            filtered_df = filtered_df[["Train No", "Sch date", "Stn", "Max Speed"]]
+            st.write(f"Train No: {train_no}")
+            st.dataframe(filtered_df)
+        else:
+            st.write(f"No data found for Train No: {train_no} on Sch Date: {sch_date.strftime('%Y-%m-%d')}")
 
 def sectionwise_time():
     st.write("This is the sectionwise time page.")
@@ -135,7 +180,7 @@ def sectional_speed():
 # Remove whitespace from the top of the page and sidebar
 st.markdown("""
         <style>
-            .stMarkdownContainer {
+            .stMarkdownContainer, .stAppHeader {
                 display: none;
             }
             .stMainBlockContainer {
@@ -196,8 +241,8 @@ st.markdown("""
 
 st.sidebar.title("Menu")
 menu_options = {
-    "Dashboard": {"icon": "house", "function": dashboard},
-    "Punctuality": {"icon": "clock", "function": punctuality},
+    "Max Speed (Trains)": {"icon": "speedometer", "function": max_speed_trains},
+    "Max Speed (Sections)": {"icon": "clock", "function": max_speed_sections},
     "Sectionwise Time": {"icon": "clock-history", "function": sectionwise_time},
     "Sectional Speed": {"icon": "speedometer", "function": sectional_speed},
 }
@@ -237,18 +282,3 @@ with st.sidebar:
 # Call the selected function
 menu_options[menu_selected]["function"]()
 
-# # Main content
-# st.write("This is an example Streamlit app with a collapsible sidebar.")
-
-# # Open the Google Sheet
-# spreadsheet_id = "1wQfTF5WMC03hNXYKYZYoFrRFcWs_G8bOhu7g5yYDG6c"
-# sheet = client.open_by_key(spreadsheet_id).sheet1
-
-# # Read data from the Google Sheet
-# expected_headers = ["TRAINNO", "FROMSTN", "FROMTIME"]  # Replace with your actual headers
-# data = sheet.get_all_records(expected_headers=expected_headers)
-# df = pd.DataFrame(data)
-
-# # Display data in Streamlit
-# st.title("Google Sheets Data in Streamlit")
-# st.write(df)

@@ -149,10 +149,14 @@ def max_speed_sections():
 
     # Fetch distinct Train No values for the selected Sch Date from the database
     train_no_list = []
-    for item in get_data(None, sch_date.strftime("%Y-%m-%d")):
-        # st.write(item)
+    progress_bar = st.progress(0)
+    total_items = len(get_data(None, sch_date.strftime("%Y-%m-%d")))
+    
+    for idx, item in enumerate(get_data(None, sch_date.strftime("%Y-%m-%d"))):
         if check_stn_for_train(item["Train No"], sch_date.strftime("%Y-%m-%d"), "RHA") and check_stn_for_train(item["Train No"], sch_date.strftime("%Y-%m-%d"), "GEDE"):
             train_no_list.append(item["Train No"])
+        progress_bar.progress((idx + 1) / total_items)
+    
     distinct_train_no = sorted(set(train_no_list))
     st.write(f"Distinct Train No: {distinct_train_no}")
     # Iterate through the list of train numbers and list the required details
@@ -163,10 +167,16 @@ def max_speed_sections():
             df["SL/No"] = pd.to_numeric(df["SL/No"], errors='coerce')
             rha_sl_no = df.loc[df["Stn"] == "RHA", "SL/No"]
             gede_sl_no = df.loc[df["Stn"] == "GEDE", "SL/No"]
-            filtered_df = df[(df["SL/No"] >= rha_sl_no) & (df["SL/No"] <= gede_sl_no)]
+            rha_sl_no_value = rha_sl_no.values[0] if not rha_sl_no.empty else None
+            gede_sl_no_value = gede_sl_no.values[0] if not gede_sl_no.empty else None
+            if rha_sl_no_value is not None and gede_sl_no_value is not None:
+                filtered_df = df[(df["SL/No"] >= rha_sl_no_value) & (df["SL/No"] <= gede_sl_no_value)]
+            else:
+                filtered_df = pd.DataFrame(columns=df.columns)
             filtered_df = filtered_df[["Train No", "Sch date", "Stn", "Max Speed"]]
-            st.write(f"Train No: {train_no}")
-            st.dataframe(filtered_df)
+            if not filtered_df.empty:
+                st.write(f"Train No: {train_no}")
+                st.dataframe(filtered_df)
         else:
             st.write(f"No data found for Train No: {train_no} on Sch Date: {sch_date.strftime('%Y-%m-%d')}")
 

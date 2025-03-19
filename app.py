@@ -9,6 +9,7 @@ from pymongo import MongoClient
 import os
 # Plotly chart to show data points with values
 import plotly.express as px
+import plotly.graph_objects as go
 
 mongo_uri = os.getenv("mongo")
 client = MongoClient(mongo_uri)
@@ -158,8 +159,9 @@ def max_speed_sections():
         progress_bar.progress((idx + 1) / total_items)
     
     distinct_train_no = sorted(set(train_no_list))
-    st.write(f"Distinct Train No: {distinct_train_no}")
     # Iterate through the list of train numbers and list the required details
+    final_df = pd.DataFrame()  # Initialize an empty DataFrame to collect all filtered data
+
     for train_no in distinct_train_no:
         data = get_data(train_no=train_no, sch_date=sch_date.strftime("%Y-%m-%d"))
         if data:
@@ -173,12 +175,79 @@ def max_speed_sections():
                 filtered_df = df[(df["SL/No"] >= rha_sl_no_value) & (df["SL/No"] <= gede_sl_no_value)]
             else:
                 filtered_df = pd.DataFrame(columns=df.columns)
-            filtered_df = filtered_df[["Train No", "Sch date", "Stn", "Max Speed"]]
-            if not filtered_df.empty:
-                st.write(f"Train No: {train_no}")
-                st.dataframe(filtered_df)
-        else:
-            st.write(f"No data found for Train No: {train_no} on Sch Date: {sch_date.strftime('%Y-%m-%d')}")
+            filtered_df = filtered_df[["Train No", "Stn", "Max Speed"]]
+            final_df = pd.concat([final_df, filtered_df], ignore_index=True)  # Append to the final DataFrame
+
+    if not final_df.empty:
+        st.write("Final Result:")
+        st.dataframe(final_df)
+        # Convert Max Speed to numeric, forcing errors to NaN
+        final_df["Max Speed"] = pd.to_numeric(final_df["Max Speed"], errors='coerce')
+        
+        # Get all Stn for the first train_no and keep the Stn sequence
+        first_train_stations = final_df[final_df["Train No"] == distinct_train_no[0]]["Stn"].unique()
+        
+        # Group by station and calculate max, min, and average of Max Speed
+        grouped_df = final_df.groupby("Stn")["Max Speed"].agg(["max", "min", "mean"]).reset_index()
+        grouped_df.columns = ["Stn", "Max Speed", "Min Speed", "Avg Speed"]
+
+        st.write("Grouped Data:")
+        st.dataframe(grouped_df)
+        
+        # Create a candlestick chart
+        fig = px.bar(grouped_df, x="Stn", y=["Max Speed", "Min Speed", "Avg Speed"], title="Max, Min, and Avg Speed by Station", barmode='group')
+        fig.update_layout(
+            xaxis_title="Station",
+            yaxis_title="Speed (Kmph)",
+            xaxis=dict(categoryorder='array', categoryarray=first_train_stations),
+            dragmode=False  # Disable zoom
+        )
+
+        st.plotly_chart(fig)
+
+        # Create a candlestick chart without the line above each stick and with data labels
+        candlestick_fig = go.Figure(data=[
+            go.Candlestick(x=grouped_df["Stn"],
+               open=grouped_df["Min Speed"],
+               high=grouped_df["Max Speed"],
+               low=grouped_df["Min Speed"],
+               close=grouped_df["Avg Speed"],
+               increasing_line_color='green', decreasing_line_color='red', showlegend=False)
+        ])
+        candlestick_fig.update_layout(
+            title="Candlestick Chart of Speed by Station",
+            xaxis_title="Station",
+            yaxis_title="Speed (Kmph)",
+            xaxis=dict(categoryorder='array', categoryarray=first_train_stations),
+            dragmode=False  # Disable zoom
+        )
+
+        # Add data labels
+        for i, row in grouped_df.iterrows():
+            candlestick_fig.add_annotation(x=row["Stn"], y=row["Max Speed"],
+                           text=f"{row['Max Speed']:.2f}", showarrow=False,
+                           yshift=10, font=dict(color="white", size=12))
+            candlestick_fig.add_annotation(x=row["Stn"], y=row["Min Speed"],
+                           text=f"{row['Min Speed']:.2f}", showarrow=False,
+                           yshift=-10, font=dict(color="white", size=12))
+            candlestick_fig.add_annotation(x=row["Stn"], y=row["Avg Speed"],
+                           text=f"{row['Avg Speed']:.2f}", showarrow=False,
+                           yshift=0, font=dict(color="white", size=12))
+
+        st.plotly_chart(candlestick_fig)
+        # grouped_df.columns = ["Stn", "Max Speed", "Min Speed", "Avg Speed"]
+
+        # # Create a candlestick chart
+        # fig = px.line(grouped_df, x="Stn", y=["Max Speed", "Min Speed", "Avg Speed"], title="Max, Min, and Avg Speed by Station")
+        # fig.update_layout(
+        #     xaxis_title="Station",
+        #     yaxis_title="Speed (Kmph)",
+        #     dragmode=False  # Disable zoom
+        # )
+
+        # st.plotly_chart(fig)
+    else:
+        st.write("No data found for the given Sch Date.")
 
 def sectionwise_time():
     st.write("This is the sectionwise time page.")

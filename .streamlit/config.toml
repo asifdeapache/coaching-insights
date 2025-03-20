@@ -1,0 +1,6 @@
+[theme]
+base = "dark"
+
+[browser]
+# Enable wide mode
+set_page_config = true

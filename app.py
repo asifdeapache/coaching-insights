@@ -1,6 +1,6 @@
 import streamlit as st
 from streamlit_option_menu import option_menu
-import gspread
+# import gspread
 # from google.oauth2 import service_account
 # from oauth2client.service_account import ServiceAccountCredentials
 import pandas as pd
@@ -106,8 +106,40 @@ def max_speed_trains():
         # Select only the required columns
         filtered_df = df[["Train No", "Sch date", "Stn", "S/Arr", "S/Dep", "A/Arr", "A/Dep", "Max Speed"]]
 
+        st.markdown(
+            """
+            <style>
+            .dataframe-container {  
+                font-size: px !important;  /* Change the font size */
+            }
+            </style>
+            """, unsafe_allow_html=True
+                )
+
         st.write(f"Showing data for: Train no={train_no}, Sch date={sch_date_str} :")
-        st.dataframe(filtered_df)
+        st.markdown(
+            """
+            <style>
+            .dataframe-container .dataframe {
+            font-size: 16px !important;  /* Change the font size */
+            }
+            </style>
+            """, unsafe_allow_html=True
+        )
+
+        st.markdown(
+            """
+            <div class="dataframe-container">
+            """,
+            unsafe_allow_html=True
+        )
+        st.dataframe(filtered_df, width=1500, height=600)
+        st.markdown(
+            """
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
         
         # Plot line graph with Stn and Max Speed
         if not df.empty:
@@ -179,8 +211,20 @@ def max_speed_sections():
             final_df = pd.concat([final_df, filtered_df], ignore_index=True)  # Append to the final DataFrame
 
     if not final_df.empty:
-        st.write("Final Result:")
-        st.dataframe(final_df)
+
+        # Pivot the DataFrame to have Stn as columns and Train No as rows
+        # Find the maximum length record of each train_no and get Stn sequence for that
+        max_length_train_no = final_df.groupby("Train No").size().idxmax()
+        max_length_stn_sequence = final_df[final_df["Train No"] == max_length_train_no]["Stn"].unique()
+
+        # Pivot the DataFrame to have Stn as columns and Train No as rows
+        pivot_df = final_df.pivot(index="Train No", columns="Stn", values="Max Speed")
+
+        # Reindex the columns to keep the station sequence as is
+        pivot_df = pivot_df.reindex(columns=max_length_stn_sequence)
+
+        st.write("Pivoted Data:")
+        st.dataframe(pivot_df)
         # Convert Max Speed to numeric, forcing errors to NaN
         final_df["Max Speed"] = pd.to_numeric(final_df["Max Speed"], errors='coerce')
         
@@ -191,8 +235,8 @@ def max_speed_sections():
         grouped_df = final_df.groupby("Stn")["Max Speed"].agg(["max", "min", "mean"]).reset_index()
         grouped_df.columns = ["Stn", "Max Speed", "Min Speed", "Avg Speed"]
 
-        st.write("Grouped Data:")
-        st.dataframe(grouped_df)
+        # st.write("Grouped Data:")
+        # st.dataframe(grouped_df)
         
         # Create a candlestick chart
         fig = px.bar(grouped_df, x="Stn", y=["Max Speed", "Min Speed", "Avg Speed"], title="Max, Min, and Avg Speed by Station", barmode='group')
@@ -235,17 +279,7 @@ def max_speed_sections():
                            yshift=0, font=dict(color="white", size=12))
 
         st.plotly_chart(candlestick_fig)
-        # grouped_df.columns = ["Stn", "Max Speed", "Min Speed", "Avg Speed"]
-
-        # # Create a candlestick chart
-        # fig = px.line(grouped_df, x="Stn", y=["Max Speed", "Min Speed", "Avg Speed"], title="Max, Min, and Avg Speed by Station")
-        # fig.update_layout(
-        #     xaxis_title="Station",
-        #     yaxis_title="Speed (Kmph)",
-        #     dragmode=False  # Disable zoom
-        # )
-
-        # st.plotly_chart(fig)
+ 
     else:
         st.write("No data found for the given Sch Date.")
 
@@ -257,6 +291,8 @@ def sectional_speed():
 
 # Sidebar configuration
 # Remove whitespace from the top of the page and sidebar
+st.set_page_config(layout="wide")
+
 st.markdown("""
         <style>
             .stMarkdownContainer, .stAppHeader {

@@ -1,6 +1,6 @@
 import streamlit as st
 from streamlit_option_menu import option_menu
-import gspread
+# import gspread
 # from google.oauth2 import service_account
 # from oauth2client.service_account import ServiceAccountCredentials
 import pandas as pd
@@ -57,6 +57,92 @@ def check_stn_for_train(train_no, sch_date, stn):
 # Authorize the client
 # client = gspread.authorize(credentials)
 
+def filter_and_plot_data(Stn_A, Stn_B, total_items_on_date):
+    stnb_sl_no = 0
+    stnb_train_no = ""
+    stna_sl_no = 0
+    stna_train_no = ""
+    filtered_df = []
+    filtered_df_temp = []
+    hold_train_no = ""
+
+    for idx, item in enumerate(total_items_on_date):
+        if item["Train No"] != hold_train_no:
+            stna_train_no = ""
+            stnb_train_no = ""
+            stna_sl_no = 0
+            stnb_sl_no = 0
+            filtered_df_temp = []
+        if item["Stn"] == Stn_A:
+            stna_sl_no = int(item["SL/No"])
+            stna_train_no = item["Train No"]
+        if item["Stn"] == Stn_B:
+            stnb_sl_no = int(item["SL/No"])
+            stnb_train_no = item["Train No"]
+        if stna_train_no:
+            filtered_df_temp.append(item)
+        if stna_train_no and stnb_train_no and stna_train_no != stnb_train_no:
+            stna_train_no = ""
+            stnb_train_no = ""  
+            filtered_df_temp = []
+        elif stna_train_no == stnb_train_no and stna_sl_no < stnb_sl_no:         
+            filtered_df.extend(filtered_df_temp)
+            filtered_df_temp = []
+            stna_train_no = ""
+            stnb_train_no = ""
+            stna_sl_no = 0
+            stnb_sl_no = 0
+        hold_train_no = item["Train No"]
+
+    # Convert filtered_df to pandas DataFrame
+    final_df = pd.DataFrame(filtered_df, columns=["Train No", "Stn", "Max Speed"])
+
+    if not final_df.empty:
+        # Pivot the DataFrame to have Stn as columns and Train No as rows
+        max_length_train_no = final_df.groupby("Train No").size().idxmax()
+        max_length_stn_sequence = final_df[final_df["Train No"] == max_length_train_no]["Stn"].unique()
+
+        pivot_df = final_df.pivot(index="Train No", columns="Stn", values="Max Speed")
+        pivot_df = pivot_df.reindex(columns=max_length_stn_sequence)
+
+        st.write(f"Max Speed Analysis between {Stn_A} and {Stn_B}:")
+        st.dataframe(pivot_df)
+
+        final_df["Max Speed"] = pd.to_numeric(final_df["Max Speed"], errors='coerce')
+        grouped_df = final_df.groupby("Stn")["Max Speed"].agg(["max", "min", "mean"]).reset_index()
+        grouped_df.columns = ["Stn", "Max Speed", "Min Speed", "Avg Speed"]
+
+        candlestick_fig = go.Figure(data=[
+            go.Candlestick(x=grouped_df["Stn"],
+                            open=grouped_df["Min Speed"],
+                            high=grouped_df["Max Speed"],
+                            low=grouped_df["Min Speed"],
+                            close=grouped_df["Avg Speed"],
+                            increasing_line_color='green', decreasing_line_color='red', showlegend=False)
+        ])
+        candlestick_fig.update_layout(
+            title=f"Max Speed Chart Analysis between {Stn_A} and {Stn_B} :",
+            xaxis_title="Station",
+            yaxis_title="Speed (Kmph)",
+            xaxis=dict(categoryorder='array', categoryarray=max_length_stn_sequence),
+            dragmode=False
+        )
+
+        for i, row in grouped_df.iterrows():
+            candlestick_fig.add_annotation(x=row["Stn"], y=row["Max Speed"],
+                                            text=f"{row['Max Speed']:.2f}", showarrow=False,
+                                            yshift=10, font=dict(color="white", size=12))
+            candlestick_fig.add_annotation(x=row["Stn"], y=row["Min Speed"],
+                                            text=f"{row['Min Speed']:.2f}", showarrow=False,
+                                            yshift=-10, font=dict(color="white", size=12))
+            candlestick_fig.add_annotation(x=row["Stn"], y=row["Avg Speed"],
+                                            text=f"{row['Avg Speed']:.2f}", showarrow=False,
+                                            yshift=0, font=dict(color="white", size=12))
+
+        st.plotly_chart(candlestick_fig)
+    else:
+        st.write("No data found for the given Sch Date.")
+
 # Define different functionalities
 def max_speed_trains():
     st.markdown("""
@@ -106,18 +192,57 @@ def max_speed_trains():
         # Select only the required columns
         filtered_df = df[["Train No", "Sch date", "Stn", "S/Arr", "S/Dep", "A/Arr", "A/Dep", "Max Speed"]]
 
+       
         st.write(f"Showing data for: Train no={train_no}, Sch date={sch_date_str} :")
-        st.dataframe(filtered_df)
+   
+        st.markdown(
+            """
+            <div class="dataframe-container">
+            """,
+            unsafe_allow_html=True
+        )
+        st.dataframe(filtered_df, width=1500, height=600)
+        st.markdown(
+            """
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
         
         # Plot line graph with Stn and Max Speed
         if not df.empty:
             fig = px.line(df, x="Stn", y="Max Speed", title="Max Speed by Station", markers=True)
+            
             fig.update_traces(text=df["Max Speed"], textposition="top center", mode='lines+markers+text')
+
+            # Add neon glow effect to the line
+            fig.update_traces(line=dict(color='cyan', width=0.5))
+            fig.update_layout(
+                paper_bgcolor='black',
+                plot_bgcolor='black',
+                font_color='white',
+                title_font=dict(size=24, color='white'),
+                xaxis=dict(showgrid=False, zeroline=False),
+                yaxis=dict(showgrid=False, zeroline=False),
+                shapes=[
+                    dict(
+                        type='line',
+                        x0=df["Stn"].iloc[i],
+                        y0=df["Max Speed"].iloc[i],
+                        x1=df["Stn"].iloc[i+1],
+                        y1=df["Max Speed"].iloc[i+1],
+                        line=dict(color='cyan', width=1, dash='solid')
+                    ) for i in range(len(df)-1)
+                ]
+            )
             fig.update_layout(
                 xaxis_title="Station", 
                 yaxis_title="Max Speed (Kmph)",
                 xaxis=dict(categoryorder='array', categoryarray=df["Stn"]),
-                dragmode=False  # Disable zoom
+                dragmode=False,  # Disable zoom
+                font=dict(size=17),  # Increase font size
+                height=600,  # Increase height
+                width=1800  # Increase width
             )
 
             st.plotly_chart(fig)
@@ -149,105 +274,17 @@ def max_speed_sections():
     sch_date = st.date_input("Enter Sch Date:", value=max(distinct_sch_date), min_value=min(distinct_sch_date), max_value=max(distinct_sch_date))
 
     # Fetch distinct Train No values for the selected Sch Date from the database
-    train_no_list = []
-    progress_bar = st.progress(0)
-    total_items = len(get_data(None, sch_date.strftime("%Y-%m-%d")))
+    total_items_on_date = get_data(None, sch_date.strftime("%Y-%m-%d"))
+
+    # Call the function with appropriate parameters
+    Stn_A = "SDAH"
+    Stn_B = "RHA"
+    # Dropdowns for Stn_A and Stn_B
+    stn_list = sorted(set(item["Stn"] for item in total_items_on_date))
+    Stn_A = st.selectbox("Select Station A:", stn_list)
+    Stn_B = st.selectbox("Select Station B:", stn_list)
+    filter_and_plot_data(Stn_A, Stn_B, total_items_on_date)
     
-    for idx, item in enumerate(get_data(None, sch_date.strftime("%Y-%m-%d"))):
-        if check_stn_for_train(item["Train No"], sch_date.strftime("%Y-%m-%d"), "RHA") and check_stn_for_train(item["Train No"], sch_date.strftime("%Y-%m-%d"), "GEDE"):
-            train_no_list.append(item["Train No"])
-        progress_bar.progress((idx + 1) / total_items)
-    
-    distinct_train_no = sorted(set(train_no_list))
-    # Iterate through the list of train numbers and list the required details
-    final_df = pd.DataFrame()  # Initialize an empty DataFrame to collect all filtered data
-
-    for train_no in distinct_train_no:
-        data = get_data(train_no=train_no, sch_date=sch_date.strftime("%Y-%m-%d"))
-        if data:
-            df = pd.DataFrame(data)
-            df["SL/No"] = pd.to_numeric(df["SL/No"], errors='coerce')
-            rha_sl_no = df.loc[df["Stn"] == "RHA", "SL/No"]
-            gede_sl_no = df.loc[df["Stn"] == "GEDE", "SL/No"]
-            rha_sl_no_value = rha_sl_no.values[0] if not rha_sl_no.empty else None
-            gede_sl_no_value = gede_sl_no.values[0] if not gede_sl_no.empty else None
-            if rha_sl_no_value is not None and gede_sl_no_value is not None:
-                filtered_df = df[(df["SL/No"] >= rha_sl_no_value) & (df["SL/No"] <= gede_sl_no_value)]
-            else:
-                filtered_df = pd.DataFrame(columns=df.columns)
-            filtered_df = filtered_df[["Train No", "Stn", "Max Speed"]]
-            final_df = pd.concat([final_df, filtered_df], ignore_index=True)  # Append to the final DataFrame
-
-    if not final_df.empty:
-        st.write("Final Result:")
-        st.dataframe(final_df)
-        # Convert Max Speed to numeric, forcing errors to NaN
-        final_df["Max Speed"] = pd.to_numeric(final_df["Max Speed"], errors='coerce')
-        
-        # Get all Stn for the first train_no and keep the Stn sequence
-        first_train_stations = final_df[final_df["Train No"] == distinct_train_no[0]]["Stn"].unique()
-        
-        # Group by station and calculate max, min, and average of Max Speed
-        grouped_df = final_df.groupby("Stn")["Max Speed"].agg(["max", "min", "mean"]).reset_index()
-        grouped_df.columns = ["Stn", "Max Speed", "Min Speed", "Avg Speed"]
-
-        st.write("Grouped Data:")
-        st.dataframe(grouped_df)
-        
-        # Create a candlestick chart
-        fig = px.bar(grouped_df, x="Stn", y=["Max Speed", "Min Speed", "Avg Speed"], title="Max, Min, and Avg Speed by Station", barmode='group')
-        fig.update_layout(
-            xaxis_title="Station",
-            yaxis_title="Speed (Kmph)",
-            xaxis=dict(categoryorder='array', categoryarray=first_train_stations),
-            dragmode=False  # Disable zoom
-        )
-
-        st.plotly_chart(fig)
-
-        # Create a candlestick chart without the line above each stick and with data labels
-        candlestick_fig = go.Figure(data=[
-            go.Candlestick(x=grouped_df["Stn"],
-               open=grouped_df["Min Speed"],
-               high=grouped_df["Max Speed"],
-               low=grouped_df["Min Speed"],
-               close=grouped_df["Avg Speed"],
-               increasing_line_color='green', decreasing_line_color='red', showlegend=False)
-        ])
-        candlestick_fig.update_layout(
-            title="Candlestick Chart of Speed by Station",
-            xaxis_title="Station",
-            yaxis_title="Speed (Kmph)",
-            xaxis=dict(categoryorder='array', categoryarray=first_train_stations),
-            dragmode=False  # Disable zoom
-        )
-
-        # Add data labels
-        for i, row in grouped_df.iterrows():
-            candlestick_fig.add_annotation(x=row["Stn"], y=row["Max Speed"],
-                           text=f"{row['Max Speed']:.2f}", showarrow=False,
-                           yshift=10, font=dict(color="white", size=12))
-            candlestick_fig.add_annotation(x=row["Stn"], y=row["Min Speed"],
-                           text=f"{row['Min Speed']:.2f}", showarrow=False,
-                           yshift=-10, font=dict(color="white", size=12))
-            candlestick_fig.add_annotation(x=row["Stn"], y=row["Avg Speed"],
-                           text=f"{row['Avg Speed']:.2f}", showarrow=False,
-                           yshift=0, font=dict(color="white", size=12))
-
-        st.plotly_chart(candlestick_fig)
-        # grouped_df.columns = ["Stn", "Max Speed", "Min Speed", "Avg Speed"]
-
-        # # Create a candlestick chart
-        # fig = px.line(grouped_df, x="Stn", y=["Max Speed", "Min Speed", "Avg Speed"], title="Max, Min, and Avg Speed by Station")
-        # fig.update_layout(
-        #     xaxis_title="Station",
-        #     yaxis_title="Speed (Kmph)",
-        #     dragmode=False  # Disable zoom
-        # )
-
-        # st.plotly_chart(fig)
-    else:
-        st.write("No data found for the given Sch Date.")
 
 def sectionwise_time():
     st.write("This is the sectionwise time page.")
@@ -257,8 +294,14 @@ def sectional_speed():
 
 # Sidebar configuration
 # Remove whitespace from the top of the page and sidebar
+st.set_page_config(layout="wide")
+
 st.markdown("""
         <style>
+            html {
+                font-size: 20px !important;  /* Change the font size */
+            }
+
             .stMarkdownContainer, .stAppHeader {
                 display: none;
             }
@@ -360,4 +403,3 @@ with st.sidebar:
 
 # Call the selected function
 menu_options[menu_selected]["function"]()
-
